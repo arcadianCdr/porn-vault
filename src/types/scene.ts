@@ -19,7 +19,7 @@ import { generateHash } from "../utils/hash";
 import { formatMessage, handleError, logger } from "../utils/logger";
 import { generateTimestampsAtIntervals } from "../utils/misc";
 import { libraryPath } from "../utils/path";
-import { removeExtension } from "../utils/string";
+import { removeExtension, dateToTimestamp } from "../utils/string";
 import { ApplyActorLabelsEnum, ApplyStudioLabelsEnum } from "./../config/schema";
 import Actor from "./actor";
 import ActorReference from "./actor_reference";
@@ -259,6 +259,16 @@ export default class Scene {
         scenes.push(scene._id);
         await Movie.setScenes(movie, scenes);
         logger.debug("Added scene to movie");
+      }
+    }
+
+    if (extractInfo && config.matching.extractSceneDateFromFilepath) {
+      // Extract release date
+      const extractedDate = dateToTimestamp(videoPath);
+
+      if (extractedDate) {
+        logger.debug(`Found release date in scene path: ${extractedDate.toString}`);
+        scene.releaseDate = extractedDate;
       }
     }
 

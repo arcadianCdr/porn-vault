@@ -142,6 +142,7 @@ const configSchema = zod
       extractSceneLabelsFromFilepath: zod.boolean(),
       extractSceneMoviesFromFilepath: zod.boolean(),
       extractSceneStudiosFromFilepath: zod.boolean(),
+      extractSceneDateFromFilepath: zod.boolean(),
       matcher: zod.union([StringMatcherSchema, WordMatcherSchema]),
       matchCreatedActors: zod.boolean(),
       matchCreatedStudios: zod.boolean(),
