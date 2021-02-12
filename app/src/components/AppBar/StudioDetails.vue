@@ -162,7 +162,7 @@ export default class StudioToolbar extends Vue {
     if (!this.currentStudio) return;
 
     if (await checkStudioExist(this.editName)) {
-      this.studioNameErrors = ["This actor already exists."];
+      this.studioNameErrors = ["This studio already exists."];
       return;
     }
 
