@@ -111,7 +111,7 @@ import IActor from "../../types/actor";
 import moment from "moment";
 import CustomFieldSelector from "../CustomFieldSelector.vue";
 import countries from "../../util/countries";
-import { checkActorExist } from "../api/search";
+import { checkActorExist } from "../../api/search";
 
 @Component({
   components: {

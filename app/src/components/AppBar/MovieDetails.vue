@@ -80,7 +80,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from "vue-property-decorator";
+import { Component, Vue, Watch } from "vue-property-decorator";
 import { movieModule } from "../../store/movie";
 import ApolloClient, { serverBase } from "../../apollo";
 import gql from "graphql-tag";
@@ -91,7 +91,7 @@ import actorFragment from "../../fragments/actor";
 import sceneFragment from "../../fragments/scene";
 import movieFragment from "../../fragments/movie";
 import StudioSelector from "../../components/StudioSelector.vue";
-import { checkMovieExist } from "../api/search";
+import { checkMovieExist } from "../../api/search";
 
 @Component({
   components: {

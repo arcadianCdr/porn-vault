@@ -94,7 +94,7 @@ import gql from "graphql-tag";
 import { studioModule } from "../../store/studio";
 import StudioSelector from "../../components/StudioSelector.vue";
 import studioFragment from "../../fragments/studio";
-import { checkStudioExist } from "../api/search";
+import { checkStudioExist } from "../../api/search";
 
 @Component({
   components: {
