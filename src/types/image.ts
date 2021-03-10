@@ -1,10 +1,11 @@
 import Vibrant from "node-vibrant";
+import { resolve } from "path";
 
 import { actorCollection, imageCollection } from "../database";
 import { searchImages } from "../search/image";
 import { unlinkAsync } from "../utils/fs/async";
 import { generateHash } from "../utils/hash";
-import { handleError } from "../utils/logger";
+import { handleError, logger } from "../utils/logger";
 import Actor from "./actor";
 import ActorReference from "./actor_reference";
 import { iterate } from "./common";
@@ -45,7 +46,9 @@ export default class Image {
   }
 
   static async extractColor(image: Image): Promise<void> {
-    if (!image.path) return;
+    if (!image.path) {
+      return;
+    }
 
     const palette = await Vibrant.from(image.path).getPalette();
 
@@ -63,12 +66,17 @@ export default class Image {
   }
 
   static color(image: Image): string | null {
-    if (!image.path) return null;
-    if (image.color) return image.color;
+    if (!image.path) {
+      return null;
+    }
+    if (image.color) {
+      return image.color;
+    }
 
     if (image.path) {
+      logger.debug(`Extracting color from image "${image._id}"`);
       Image.extractColor(image).catch((err: Error) => {
-        handleError(`Image color extraction failed for ${image.path}`, err);
+        handleError(`Image color extraction failed for image "${image._id}" (${image.path})`, err);
       });
     }
 
@@ -175,10 +183,10 @@ export default class Image {
     return Label.getForItem(image._id);
   }
 
-  static async getImageByPath(path: string): Promise<Image | undefined> {
-    return (await imageCollection.query("path-index", encodeURIComponent(path)))[0] as
-      | Image
-      | undefined;
+  static async getByPath(path: string): Promise<Image | undefined> {
+    const resolved = resolve(path);
+    const images = await imageCollection.query("path-index", encodeURIComponent(resolved));
+    return images[0];
   }
 
   constructor(name: string) {

@@ -96,7 +96,8 @@
                     }}
                   </div>
                   <div class="py-1">
-                    <b>{{ currentActor.numScenes }}</b> scenes
+                    <b>{{ currentActor.numScenes }}</b>
+                    {{ currentActor.numScenes === 1 ? "scene" : "scenes" }}
                   </div>
                   <v-tooltip bottom class="py-1">
                     <template v-slot:activator="{ on }">
@@ -996,6 +997,7 @@ export default class ActorDetails extends Vue {
             }
             avatar {
               _id
+              color
             }
           }
         }
@@ -1007,6 +1009,7 @@ export default class ActorDetails extends Vue {
     })
       .then((res) => {
         actorModule.setCurrent(res.data.runActorPlugins);
+        this.editCustomFields = res.data.runActorPlugins.customFields;
       })
       .catch((err) => {
         console.error(err);

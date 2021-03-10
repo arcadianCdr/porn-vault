@@ -1,8 +1,8 @@
 import ffmpeg, { FfprobeData } from "fluent-ffmpeg";
-import { existsSync } from "fs";
+import { existsSync, statSync } from "fs";
 import Jimp from "jimp";
 import mergeImg from "merge-img";
-import path, { basename } from "path";
+import path, { basename, resolve } from "path";
 import asyncPool from "tiny-async-pool";
 
 import { getConfig } from "../config";
@@ -80,7 +80,7 @@ export class SceneMeta {
 
 export default class Scene {
   _id: string;
-  hash: string | null = null;
+  hash?: string | null; // deprecated
   name: string;
   description: string | null = null;
   addedOn = +new Date();
@@ -97,6 +97,44 @@ export default class Scene {
   album?: string | null = null;
   studio: string | null = null;
   processed?: boolean = false;
+
+  static async changePath(scene: Scene, path: string): Promise<void> {
+    const cleanPath = path.trim();
+
+    if (!cleanPath.length) {
+      // Clear scene path
+      logger.debug(
+        `Empty path, setting to null & clearing scene metadata for scene "${scene._id}"`
+      );
+      scene.path = null;
+      scene.meta = new SceneMeta();
+      scene.processed = false;
+    } else {
+      const newPath = resolve(cleanPath);
+
+      if (scene.path !== newPath) {
+        if (!existsSync(newPath)) {
+          throw new Error(`File at "${newPath}" not found`);
+        }
+        if (statSync(newPath).isDirectory()) {
+          throw new Error(`"${newPath}" is a directory`);
+        }
+
+        {
+          const sceneWithPath = await Scene.getByPath(newPath);
+          if (sceneWithPath) {
+            throw new Error(
+              `"${newPath}" already in use by scene "${sceneWithPath.name}" (${sceneWithPath._id})`
+            );
+          }
+        }
+
+        logger.debug(`Setting path of scene "${scene._id}" to "${newPath}"`);
+        scene.path = newPath;
+        await Scene.runFFProbe(scene);
+      }
+    }
+  }
 
   static async iterate(
     func: (scene: Scene) => void | unknown | Promise<void | unknown>,
@@ -145,12 +183,15 @@ export default class Scene {
   static async runFFProbe(scene: Scene): Promise<FfprobeData> {
     const videoPath = scene.path;
     if (!videoPath) {
-      throw new Error(`Scene ${scene._id} has no path, cannot run ffprobe`);
+      throw new Error(`Scene "${scene._id}" has no path, cannot run ffprobe`);
     }
+
+    logger.verbose(`Running FFprobe on scene "${scene._id}"`);
 
     scene.meta.dimensions = { width: -1, height: -1 };
 
     const metadata = await ffprobeAsync(videoPath);
+    logger.silly(`FFprobe data: ${formatMessage(metadata)}`);
     const { streams } = metadata;
 
     let foundCorrectStream = false;
@@ -175,14 +216,14 @@ export default class Scene {
 
     if (!foundCorrectStream) {
       logger.debug(streams);
-      throw new Error("Could not get video stream...broken file?");
+      throw new Error("Could not get video stream... broken file?");
     }
 
     return metadata;
   }
 
   static async onImport(videoPath: string, extractInfo = true): Promise<Scene> {
-    logger.debug(`Importing ${videoPath}`);
+    logger.debug(`Importing "${videoPath}"`);
     const config = getConfig();
 
     const sceneName = removeExtension(basename(videoPath));
@@ -262,21 +303,8 @@ export default class Scene {
       }
     }
 
-    if (extractInfo && config.matching.extractSceneDateFromFilepath) {
-      // Extract release date
-      const extractedDate = dateToTimestamp(videoPath);
-
-      if (extractedDate) {
-        logger.debug(`Found release date in scene path: ${new Date(extractedDate).toDateString()}`);
-        scene.releaseDate = extractedDate;
-      }
-    }
-
-    try {
-      scene = await onSceneCreate(scene, sceneLabels, sceneActors);
-    } catch (error) {
-      logger.error(error);
-    }
+    const pluginResult = await onSceneCreate(scene, sceneLabels, sceneActors);
+    scene = pluginResult.scene;
 
     if (!scene.thumbnail) {
       const thumbnail = await Scene.generateSingleThumbnail(
@@ -303,6 +331,8 @@ export default class Scene {
     await indexScenes([scene]);
     logger.info(`Scene '${scene.name}' created.`);
 
+    await pluginResult.commit();
+
     if (actors.length) {
       await indexActors(actors);
     }
@@ -318,6 +348,7 @@ export default class Scene {
     const watchItem = new SceneView(scene._id, time);
     await viewCollection.upsert(watchItem._id, watchItem);
     await indexScenes([scene]);
+    await indexActors(await Scene.getActors(scene));
   }
 
   static async unwatch(scene: Scene): Promise<void> {
@@ -328,6 +359,7 @@ export default class Scene {
       await viewCollection.remove(last._id);
     }
     await indexScenes([scene]);
+    await indexActors(await Scene.getActors(scene));
   }
 
   static async remove(scene: Scene): Promise<void> {
@@ -402,9 +434,10 @@ export default class Scene {
     return Label.getForItem(scene._id);
   }
 
-  static async getSceneByPath(path: string): Promise<Scene | undefined> {
-    const scenes = await sceneCollection.query("path-index", encodeURIComponent(path));
-    return scenes[0] as Scene | undefined;
+  static async getByPath(path: string): Promise<Scene | undefined> {
+    const resolved = resolve(path);
+    const scenes = await sceneCollection.query("path-index", encodeURIComponent(resolved));
+    return scenes[0];
   }
 
   static async getById(_id: string): Promise<Scene | null> {

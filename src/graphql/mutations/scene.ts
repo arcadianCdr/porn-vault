@@ -34,35 +34,37 @@ type ISceneUpdateOpts = Partial<{
   releaseDate: number;
   studio: string | null;
   customFields: Dictionary<string[] | boolean | string | null>;
+  path: string;
 }>;
 
-async function runScenePlugins(ids: string[]) {
-  const updatedScenes = [] as Scene[];
-  for (const id of ids) {
-    let scene = await Scene.getById(id);
+async function runScenePlugins(id: string): Promise<Scene | null> {
+  let scene = await Scene.getById(id);
 
-    if (scene) {
-      const labels = (await Scene.getLabels(scene)).map((l) => l._id);
-      const actors = (await Scene.getActors(scene)).map((a) => a._id);
-      scene = await onSceneCreate(scene, labels, actors, "sceneCustom");
+  if (scene) {
+    const labels = (await Scene.getLabels(scene)).map((l) => l._id);
+    const actors = (await Scene.getActors(scene)).map((a) => a._id);
 
-      await Scene.setLabels(scene, labels);
-      await Scene.setActors(scene, actors);
-      await sceneCollection.upsert(scene._id, scene);
+    const result = await onSceneCreate(scene, labels, actors, "sceneCustom");
+    scene = result.scene;
 
-      updatedScenes.push(scene);
-    }
-
-    await indexScenes(updatedScenes);
+    await Scene.setLabels(scene, labels);
+    await Scene.setActors(scene, actors);
+    await sceneCollection.upsert(scene._id, scene);
+    await indexScenes([scene]);
+    await result.commit();
   }
-  return updatedScenes;
+
+  return scene;
 }
 
 export default {
   async runScenePlugins(_: unknown, { id }: { id: string }): Promise<Scene> {
     logger.debug(`Mutation: runScenePlugins, for scene ${id}`);
-    const result = await runScenePlugins([id]);
-    return result[0];
+    const result = await runScenePlugins(id);
+    if (!result) {
+      throw new Error("Scene not found");
+    }
+    return result;
   },
 
   async screenshotScene(
@@ -104,12 +106,16 @@ export default {
   ): Promise<Scene> {
     for (const actor of args.actors || []) {
       const actorInDb = await Actor.getById(actor);
-      if (!actorInDb) throw new Error(`Actor ${actor} not found`);
+      if (!actorInDb) {
+        throw new Error(`Actor ${actor} not found`);
+      }
     }
 
     for (const label of args.labels || []) {
       const labelInDb = await Label.getById(label);
-      if (!labelInDb) throw new Error(`Label ${label} not found`);
+      if (!labelInDb) {
+        throw new Error(`Label ${label} not found`);
+      }
     }
 
     const config = getConfig();
@@ -163,6 +169,7 @@ export default {
     const updatedScenes: Scene[] = [];
 
     for (const id of ids) {
+      logger.silly(`Updating scene ${id}`);
       const scene = await Scene.getById(id);
 
       if (scene) {
@@ -177,6 +184,10 @@ export default {
 
         if (typeof opts.thumbnail === "string") {
           scene.thumbnail = opts.thumbnail;
+        }
+
+        if (typeof opts.path === "string") {
+          await Scene.changePath(scene, opts.path);
         }
 
         if (opts.studio !== undefined) {
