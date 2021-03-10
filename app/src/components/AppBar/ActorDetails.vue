@@ -36,11 +36,18 @@
           <v-form v-model="validEdit">
             <v-text-field
               :rules="actorNameRules"
-              :error-messages="actorNameErrors"
+              :error-messages="ignoreDuplicateErrors ? [] : actorNameErrors"
               :hint="actorAliasWarning"
               color="primary"
               v-model="editName"
               placeholder="Name"
+            />
+            <v-checkbox
+              color="primary"
+              hide-details
+              v-model="ignoreDuplicateErrors"
+              v-if="actorNameErrors.length"
+              label="Ignore the duplicate name error"
             />
 
             <v-textarea
@@ -126,6 +133,7 @@ export default class ActorToolbar extends Vue {
   actorNameRules = [(v) => (!!v && !!v.length) || "Invalid actor name"];
   actorNameErrors = [] as string[];
   actorAliasWarning = "" as string;
+  ignoreDuplicateErrors = false as boolean;
 
   removeDialog = false;
   removeLoader = false;
@@ -138,6 +146,7 @@ export default class ActorToolbar extends Vue {
     // Blocking error for name conflicts
     if (existResult?.nameDup) {
       this.actorNameErrors = ["This actor already exists."];
+      this.ignoreDuplicateErrors = false;
     } else {
       this.actorNameErrors = [];
     }

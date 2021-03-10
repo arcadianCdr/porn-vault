@@ -243,11 +243,18 @@
           <v-form v-model="validCreation">
             <v-text-field
               :rules="actorNameRules"
-              :error-messages="actorNameErrors"
+              :error-messages="ignoreDuplicateErrors ? [] : actorNameErrors"
               :hint="actorAliasWarning"
               color="primary"
               v-model="createActorName"
               placeholder="Name"
+            />
+            <v-checkbox
+              color="primary"
+              hide-details
+              v-model="ignoreDuplicateErrors"
+              v-if="actorNameErrors.length"
+              label="Ignore the duplicate name error"
             />
 
             <v-combobox
@@ -538,6 +545,7 @@ export default class ActorList extends mixins(DrawerMixin) {
   actorNameRules = [(v) => (!!v && !!v.length) || "Invalid actor name"];
   actorNameErrors = [] as string[];
   actorAliasWarning = "" as string;
+  ignoreDuplicateErrors = false as boolean;
 
   @Watch("createActorName", {})
   async onCreateActorNameChange(newVal: string) {
@@ -545,6 +553,7 @@ export default class ActorList extends mixins(DrawerMixin) {
     // Blocking error for name conflicts
     if (existResult?.nameDup) {
       this.actorNameErrors = ["This actor already exists."];
+      this.ignoreDuplicateErrors = false;
     } else {
       this.actorNameErrors = [];
     }
