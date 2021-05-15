@@ -20,7 +20,7 @@ import { generateHash } from "../utils/hash";
 import { formatMessage, handleError, logger } from "../utils/logger";
 import { evaluateFps, generateTimestampsAtIntervals } from "../utils/misc";
 import { libraryPath } from "../utils/path";
-import { dateToTimestamp, removeExtension } from "../utils/string";
+import { removeExtension } from "../utils/string";
 import { ApplyActorLabelsEnum, ApplyStudioLabelsEnum } from "./../config/schema";
 import { FFProbeAudioCodecs, FFProbeContainers, FFProbeVideoCodecs } from "./../ffmpeg/ffprobe";
 import Actor from "./actor";
