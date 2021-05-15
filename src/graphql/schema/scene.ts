@@ -8,9 +8,17 @@ export default gql`
 
   type SceneMeta {
     size: Long
-    duration: Int
+    duration: Float
     dimensions: Dimensions!
     fps: Float
+    bitrate: Int
+  }
+
+  type AvailableStream {
+    label: String!
+    mimeType: String
+    streamType: String!
+    transcode: Boolean!
   }
 
   type SceneSearchResults {
@@ -72,6 +80,7 @@ export default gql`
     studio: Studio
     markers: [Marker!]!
     movies: [Movie!]!
+    availableStreams: [AvailableStream!]!
   }
 
   type RunFFProbeResult {

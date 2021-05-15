@@ -8,6 +8,7 @@ import asyncPool from "tiny-async-pool";
 import { getConfig } from "../config";
 import { actorCollection, imageCollection, sceneCollection, viewCollection } from "../database";
 import { extractActors, extractLabels, extractMovies, extractStudios } from "../extractor";
+import { normalizeFFProbeContainer } from "../ffmpeg/ffprobe";
 import { singleScreenshot } from "../ffmpeg/screenshot";
 import { onSceneCreate } from "../plugins/events/scene";
 import { enqueueScene } from "../queue/processing";
@@ -21,6 +22,7 @@ import { evaluateFps, generateTimestampsAtIntervals } from "../utils/misc";
 import { libraryPath } from "../utils/path";
 import { dateToTimestamp, removeExtension } from "../utils/string";
 import { ApplyActorLabelsEnum, ApplyStudioLabelsEnum } from "./../config/schema";
+import { FFProbeAudioCodecs, FFProbeContainers, FFProbeVideoCodecs } from "./../ffmpeg/ffprobe";
 import Actor from "./actor";
 import ActorReference from "./actor_reference";
 import { iterate } from "./common";
@@ -76,6 +78,10 @@ export class SceneMeta {
   duration: number | null = null;
   dimensions: IDimensions | null = null;
   fps: number | null = null;
+  videoCodec: FFProbeVideoCodecs | null = null;
+  audioCodec: FFProbeAudioCodecs | null = null;
+  container: FFProbeContainers | null = null;
+  bitrate: number | null = null;
 }
 
 export default class Scene {
@@ -191,25 +197,59 @@ export default class Scene {
     scene.meta.dimensions = { width: -1, height: -1 };
 
     const metadata = await ffprobeAsync(videoPath);
-    logger.silly(`FFprobe data: ${formatMessage(metadata)}`);
-    const { streams } = metadata;
+    const { format, streams } = metadata;
+    scene.meta.container = await normalizeFFProbeContainer(
+      format.format_name as FFProbeContainers,
+      videoPath
+    );
 
-    let foundCorrectStream = false;
-    for (const stream of streams) {
-      if (stream.width && stream.height) {
-        scene.meta.dimensions.width = stream.width;
-        scene.meta.dimensions.height = stream.height;
+    logger.verbose(
+      `Got ffprobe metadata ${formatMessage(metadata)} with normalized container "${
+        scene.meta.container
+      }"`
+    );
+
+    const iterateStreams = [...streams];
+
+    let stream = iterateStreams.shift();
+    let foundVideoCodec = false;
+    let foundAudioCodec = false;
+    while (stream && (!foundVideoCodec || !foundAudioCodec)) {
+      if (!foundVideoCodec && stream.codec_type === "video") {
+        foundVideoCodec = true;
+        scene.meta.videoCodec = (stream.codec_name as FFProbeVideoCodecs) || null;
+
+        if (stream.width && stream.height) {
+          scene.meta.dimensions.width = stream.width;
+          scene.meta.dimensions.height = stream.height;
+        }
+
         scene.meta.fps = stream.r_frame_rate ? evaluateFps(stream.r_frame_rate) : null;
-        scene.meta.duration = parseInt(stream.duration || "") || null;
+        scene.meta.duration = parseFloat(stream.duration || "") || null;
         scene.meta.size = (await statAsync(videoPath)).size;
-        foundCorrectStream = true;
-        break;
+        scene.meta.bitrate = stream.bit_rate ? parseInt(stream.bit_rate) : null;
+        if (Number.isNaN(scene.meta.bitrate)) {
+          scene.meta.bitrate = null;
+        }
       }
+
+      if (!foundAudioCodec && stream.codec_type === "audio") {
+        foundAudioCodec = true;
+        scene.meta.audioCodec = (stream.codec_name as FFProbeAudioCodecs) || null;
+      }
+
+      stream = iterateStreams.shift();
     }
 
-    if (!foundCorrectStream) {
-      logger.debug(streams);
-      throw new Error("Could not get video stream... broken file?");
+    if (!foundVideoCodec) {
+      throw new Error("Could not get video stream...broken file?");
+    }
+
+    // MKV stores duration in format
+    scene.meta.duration = scene.meta.duration ?? (format.duration || null);
+
+    if (!scene.meta.bitrate && scene.meta.size && scene.meta.duration) {
+      scene.meta.bitrate = Math.round(scene.meta.size / scene.meta.duration);
     }
 
     return metadata;
@@ -437,7 +477,7 @@ export default class Scene {
     return sceneCollection.get(_id);
   }
 
-  static async getBulk(_ids: string[]): Promise<Scene[]> {
+  static getBulk(_ids: string[]): Promise<Scene[]> {
     return sceneCollection.getBulk(_ids);
   }
 

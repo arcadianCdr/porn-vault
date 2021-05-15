@@ -12,6 +12,7 @@ import {
   buildActorExtractor,
   buildFieldExtractor,
   buildLabelExtractor,
+  extractLabels,
   extractMovies,
   extractStudios,
 } from "../../extractor";
@@ -311,12 +312,32 @@ export async function onSceneCreate(
           await Image.setLabels(image, sceneLabels);
         }
         await Image.setActors(image, sceneActors);
-        await indexImages([image]);
       }
+      await indexImages(createdImages);
 
       for (const marker of createdMarkers) {
-        await indexMarkers([marker]);
+        await Marker.setActors(marker, sceneActors);
+
+        // Extract labels
+        const extractedLabels = await extractLabels(marker.name);
+        logger.verbose(`Found ${extractedLabels.length} labels in marker name`);
+        await Marker.setLabels(marker, extractedLabels);
+
+        if (config.matching.applyActorLabels.includes("plugin:marker:create")) {
+          for (const actorId of sceneActors) {
+            const actor = await Actor.getById(actorId);
+
+            if (actor) {
+              const actorLabels = await Actor.getLabels(actor);
+              await Marker.addLabels(
+                marker,
+                actorLabels.map((l) => l._id)
+              );
+            }
+          }
+        }
       }
+      await indexMarkers(createdMarkers);
     },
   };
 }
