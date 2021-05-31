@@ -74,7 +74,6 @@ const defaultConfig: IConfig = {
     extractSceneLabelsFromFilepath: true,
     extractSceneMoviesFromFilepath: true,
     extractSceneStudiosFromFilepath: true,
-    extractSceneDateFromFilepath: true,
     matcher: DEFAULT_WORD_MATCHER,
     matchCreatedActors: true,
     matchCreatedStudios: true,

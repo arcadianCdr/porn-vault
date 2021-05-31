@@ -51,7 +51,6 @@
     "extractSceneLabelsFromFilepath": true,
     "extractSceneMoviesFromFilepath": true,
     "extractSceneStudiosFromFilepath": true,
-    "extractSceneDateFromFilepath": true,
     "matcher": {
       "type": "word",
       "options": {

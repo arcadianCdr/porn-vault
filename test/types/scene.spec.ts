@@ -61,7 +61,6 @@ describe("types", () => {
             extractSceneLabelsFromFilepath: false,
             extractSceneMoviesFromFilepath: false,
             extractSceneStudiosFromFilepath: false,
-            extractSceneDateFromFilepath: false,
           },
         });
 
@@ -130,7 +129,6 @@ describe("types", () => {
               extractSceneLabelsFromFilepath: false,
               extractSceneMoviesFromFilepath: false,
               extractSceneStudiosFromFilepath: false,
-              extractSceneDateFromFilepath: false,
             },
           });
 
@@ -154,7 +152,6 @@ describe("types", () => {
               extractSceneLabelsFromFilepath: false,
               extractSceneMoviesFromFilepath: false,
               extractSceneStudiosFromFilepath: false,
-              extractSceneDateFromFilepath: false,
             },
           });
 
@@ -185,7 +182,6 @@ describe("types", () => {
               extractSceneLabelsFromFilepath: true,
               extractSceneMoviesFromFilepath: true,
               extractSceneStudiosFromFilepath: true,
-              extractSceneDateFromFilepath: false,
             },
           });
 
@@ -216,7 +212,6 @@ describe("types", () => {
               extractSceneLabelsFromFilepath: false,
               extractSceneMoviesFromFilepath: false,
               extractSceneStudiosFromFilepath: false,
-              extractSceneDateFromFilepath: false,
             },
           });
 
@@ -247,7 +242,6 @@ describe("types", () => {
               extractSceneLabelsFromFilepath: true,
               extractSceneMoviesFromFilepath: true,
               extractSceneStudiosFromFilepath: true,
-              extractSceneDateFromFilepath: false,
             },
           });
 
@@ -291,7 +285,6 @@ describe("types", () => {
                 extractSceneLabelsFromFilepath: false,
                 extractSceneMoviesFromFilepath: false,
                 extractSceneStudiosFromFilepath: true,
-                extractSceneDateFromFilepath: false,
                 applyActorLabels: [],
                 applyStudioLabels: [],
               },
@@ -330,7 +323,6 @@ describe("types", () => {
                 extractSceneLabelsFromFilepath: false,
                 extractSceneMoviesFromFilepath: false,
                 extractSceneStudiosFromFilepath: true,
-                extractSceneDateFromFilepath: false,
                 applyActorLabels: [ApplyActorLabelsEnum.enum["event:scene:create"]],
                 applyStudioLabels: [ApplyStudioLabelsEnum.enum["event:scene:create"]],
               },
