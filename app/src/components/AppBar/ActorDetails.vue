@@ -10,9 +10,9 @@
     </v-toolbar-title>
 
     <v-btn @click="favorite" class="mx-1" icon>
-      <v-icon :color="currentActor.favorite ? 'error' : undefined">{{
-        currentActor.favorite ? "mdi-heart" : "mdi-heart-outline"
-      }}</v-icon>
+      <v-icon :color="currentActor.favorite ? 'error' : undefined">
+        {{ currentActor.favorite ? "mdi-heart" : "mdi-heart-outline" }}
+      </v-icon>
     </v-btn>
 
     <v-btn @click="bookmark" icon>
@@ -54,7 +54,7 @@
               auto-grow
               color="primary"
               v-model="editDescription"
-              placeholder="Actor description"
+              :placeholder="`${actorSingular} description`"
               :rows="2"
             />
 
@@ -82,9 +82,9 @@
         <v-divider></v-divider>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn text @click="editActor" color="primary" class="text-none" :disabled="!validEdit"
-            >Edit</v-btn
-          >
+          <v-btn text @click="editActor" color="primary" class="text-none" :disabled="!validEdit">
+            Edit
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -92,10 +92,9 @@
     <v-dialog v-model="removeDialog" max-width="400px">
       <v-card :loading="removeLoader">
         <v-card-title>Really delete '{{ currentActor.name }}'?</v-card-title>
-        <v-card-text
-          >Scene and images featuring {{ currentActor.name }} will stay in your
-          collection.</v-card-text
-        >
+        <v-card-text>
+          Scene and images featuring {{ currentActor.name }} will stay in your collection.
+        </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
           <v-btn class="text-none" text color="error" @click="remove">Delete</v-btn>
@@ -110,11 +109,10 @@ import { Component, Vue, Watch } from "vue-property-decorator";
 import { actorModule } from "../../store/actor";
 import ApolloClient from "../../apollo";
 import gql from "graphql-tag";
-import IActor from "../../types/actor";
-import moment from "moment";
 import CustomFieldSelector from "../CustomFieldSelector.vue";
 import countries from "../../util/countries";
-import { checkActorExist, IDupCheckResults } from "../../api/search";
+import { checkActorExist, IDupCheckResults } from "@/api/search";
+import { contextModule } from "@/store/context";
 
 @Component({
   components: {
@@ -160,6 +158,10 @@ export default class ActorToolbar extends Vue {
     }
   }
 
+  get actorSingular() {
+    return contextModule.actorSingular;
+  }
+
   get countries() {
     return countries;
   }
@@ -170,7 +172,7 @@ export default class ActorToolbar extends Vue {
     this.removeLoader = true;
     ApolloClient.mutate({
       mutation: gql`
-        mutation($ids: [String!]!) {
+        mutation ($ids: [String!]!) {
           removeActors(ids: $ids)
         }
       `,
@@ -205,7 +207,7 @@ export default class ActorToolbar extends Vue {
 
     ApolloClient.mutate({
       mutation: gql`
-        mutation($ids: [String!]!, $opts: ActorUpdateOpts!) {
+        mutation ($ids: [String!]!, $opts: ActorUpdateOpts!) {
           updateActors(ids: $ids, opts: $opts) {
             name
             aliases
@@ -263,7 +265,7 @@ export default class ActorToolbar extends Vue {
 
     ApolloClient.mutate({
       mutation: gql`
-        mutation($ids: [String!]!, $opts: ActorUpdateOpts!) {
+        mutation ($ids: [String!]!, $opts: ActorUpdateOpts!) {
           updateActors(ids: $ids, opts: $opts) {
             favorite
           }
@@ -289,7 +291,7 @@ export default class ActorToolbar extends Vue {
 
     ApolloClient.mutate({
       mutation: gql`
-        mutation($ids: [String!]!, $opts: ActorUpdateOpts!) {
+        mutation ($ids: [String!]!, $opts: ActorUpdateOpts!) {
           updateActors(ids: $ids, opts: $opts) {
             bookmark
           }
