@@ -2,9 +2,9 @@ import { getConfig } from "../../config";
 import { ApplyActorLabelsEnum, ApplyStudioLabelsEnum } from "../../config/schema";
 import { collections } from "../../database";
 import {
-  buildActorExtractor,
   buildFieldExtractor,
   buildLabelExtractor,
+  buildPluginResultActorExtractor,
   extractLabels,
   extractMovies,
   extractStudios,
@@ -178,7 +178,7 @@ export async function onSceneCreate(
           ApplyActorLabelsEnum.enum["plugin:scene:custom"]
         ));
 
-    const localExtractActors = await buildActorExtractor();
+    const localExtractActors = await buildPluginResultActorExtractor();
     for (const actorName of pluginResult.actors) {
       const extractedIds = localExtractActors(actorName);
       if (extractedIds.length) {

@@ -1,3 +1,4 @@
+import { DEFAULT_EXIST_MATCHER, ExistMatcher } from "./matching/existMatcher";
 import { getMatcher, MatchSource } from "./matching/matcher";
 import { DEFAULT_STRING_MATCHER, StringMatcher } from "./matching/stringMatcher";
 import Actor from "./types/actor";
@@ -43,6 +44,23 @@ export async function buildFieldExtractor(extraFields?: CustomField[]): Promise<
       stripString: DEFAULT_STRING_MATCHER.options.stripString,
     })
       .filterMatchingItems(allItems, str, (field) => [field.name], false)
+      .map((s) => s._id);
+  };
+}
+
+export async function buildPluginResultActorExtractor(): Promise<Extractor> {
+  return buildPluginResultExtractor(Actor.getAll, (actor) => [actor.name, ...actor.aliases]);
+}
+
+export async function buildPluginResultExtractor<T extends MatchSource>(
+  getAll: () => T[] | Promise<T[]>,
+  getItemInputs: (item: T) => string[]
+): Promise<Extractor> {
+  const allItems = await getAll();
+
+  return (str: string) => {
+    return new ExistMatcher(DEFAULT_EXIST_MATCHER.options)
+      .filterMatchingItems(allItems, str, getItemInputs, false)
       .map((s) => s._id);
   };
 }
