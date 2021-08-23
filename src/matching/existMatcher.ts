@@ -55,12 +55,14 @@ export class ExistMatcher implements Matcher {
       for (const input of filteredInputs) {
         const cleanInput = stripStr(input, this.options.stripString);
         logger.silly(`(Exist matcher) Checking if "${cleanInput} matches "${cleanStr}"`);
-        let matchIndex = -1;
-        if (cleanStr === cleanInput) {
-          matchIndex = 0;
-        }
+        let matchIndex = cleanInput === cleanStr ? 0 : -1;
         logger.silly(`(Exist matcher) Substring index: ${matchIndex}`);
         if (matchIndex !== -1) {
+          logger.warn(
+            `(Exist matcher) matched str: ${str} for one of source inputs: ${formatMessage(
+              inputs
+            )}`
+          );
           matches.push({
             source,
             sourceId: source._id,
