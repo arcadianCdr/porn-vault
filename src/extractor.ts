@@ -48,10 +48,11 @@ export async function buildFieldExtractor(extraFields?: CustomField[]): Promise<
   };
 }
 
-export async function buildPluginResultActorExtractor(): Promise<Extractor> {
-  return buildPluginResultExtractor(Actor.getAll, (actor) => [actor.name, ...actor.aliases]);
-}
-
+/**
+ * @param getAll function that returns the source data array
+ * @param getItemInputs items to match in the source
+ * @returns an MatchSource that performs an existence check on the source collection
+ */
 export async function buildPluginResultExtractor<T extends MatchSource>(
   getAll: () => T[] | Promise<T[]>,
   getItemInputs: (item: T) => string[]
@@ -70,6 +71,10 @@ export async function extractFields(str: string, extraFields?: CustomField[]): P
   return (await buildFieldExtractor(extraFields))(str);
 }
 
+export async function buildPluginResultLabelExtractor(): Promise<Extractor> {
+  return await buildPluginResultExtractor(Label.getAll, (label) => [label.name, ...label.aliases]);
+}
+
 export async function buildLabelExtractor(extraLabels?: Label[]): Promise<Extractor> {
   return buildExtractor(
     Label.getAll,
@@ -84,8 +89,12 @@ export async function extractLabels(str: string, extraLabels?: Label[]): Promise
   return (await buildLabelExtractor(extraLabels))(str);
 }
 
+export async function buildPluginResultActorExtractor(): Promise<Extractor> {
+  return await buildPluginResultExtractor(Actor.getAll, (actor) => [actor.name, ...actor.aliases]);
+}
+
 export async function buildActorExtractor(extraActors?: Actor[]): Promise<Extractor> {
-  return buildExtractor(
+  return await buildExtractor(
     Actor.getAll,
     (actor) => [actor.name, ...actor.aliases],
     false,
@@ -96,6 +105,13 @@ export async function buildActorExtractor(extraActors?: Actor[]): Promise<Extrac
 // Returns IDs of extracted actors
 export async function extractActors(str: string, extraActors?: Actor[]): Promise<string[]> {
   return (await buildActorExtractor(extraActors))(str);
+}
+
+export async function buildPluginResultStudioExtractor(): Promise<Extractor> {
+  return await buildPluginResultExtractor(Studio.getAll, (studio) => [
+    studio.name,
+    ...(studio.aliases || []),
+  ]);
 }
 
 /**
@@ -134,8 +150,12 @@ export async function extractScenes(str: string, extraScenes?: Scene[]): Promise
   return (await buildSceneExtractor(extraScenes))(str);
 }
 
+export async function buildPluginResultMovieExtractor(): Promise<Extractor> {
+  return await buildPluginResultExtractor(Movie.getAll, (movie) => [movie.name]);
+}
+
 export async function buildMovieExtractor(extraMovies?: Movie[]): Promise<Extractor> {
-  return buildExtractor(Movie.getAll, (movie) => [movie.name], true, extraMovies);
+  return await buildExtractor(Movie.getAll, (movie) => [movie.name], true, extraMovies);
 }
 
 // Returns IDs of extracted movies

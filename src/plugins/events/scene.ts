@@ -3,11 +3,11 @@ import { ApplyActorLabelsEnum, ApplyStudioLabelsEnum } from "../../config/schema
 import { collections } from "../../database";
 import {
   buildFieldExtractor,
-  buildLabelExtractor,
   buildPluginResultActorExtractor,
+  buildPluginResultLabelExtractor,
+  buildPluginResultMovieExtractor,
+  buildPluginResultStudioExtractor,
   extractLabels,
-  extractMovies,
-  extractStudios,
 } from "../../extractor";
 import { runPluginsSerial } from "../../plugins";
 import { indexActors } from "../../search/actor";
@@ -211,7 +211,7 @@ export async function onSceneCreate(
 
   if (pluginResult.labels && Array.isArray(pluginResult.labels)) {
     const labelIds = [] as string[];
-    const localExtractLabels = await buildLabelExtractor();
+    const localExtractLabels = await buildPluginResultLabelExtractor();
     for (const labelName of pluginResult.labels) {
       const extractedIds = localExtractLabels(labelName);
       if (extractedIds.length) {
@@ -230,7 +230,8 @@ export async function onSceneCreate(
 
   if (!scene.studio && pluginResult.studio && typeof pluginResult.studio === "string") {
     let studioLabels: string[] = [];
-    const studioId = (await extractStudios(pluginResult.studio))[0] || null;
+    const localExtractStudios = await buildPluginResultStudioExtractor();
+    const studioId = localExtractStudios(pluginResult.studio)[0] || null;
     const shouldApplyStudioLabels =
       (event === "sceneCreated" &&
         config.matching.applyStudioLabels.includes(
@@ -271,7 +272,8 @@ export async function onSceneCreate(
   }
 
   if (pluginResult.movie && typeof pluginResult.movie === "string") {
-    const movieId = (await extractMovies(pluginResult.movie))[0] || null;
+    const localExtractMovie = await buildPluginResultMovieExtractor();
+    const movieId = localExtractMovie(pluginResult.movie)[0] || null;
 
     if (movieId) {
       const movie = <Movie>await Movie.getById(movieId);

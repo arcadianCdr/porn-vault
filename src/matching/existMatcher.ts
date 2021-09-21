@@ -11,14 +11,12 @@ export const ExistMatcherOptionsSchema = zod.object({
 export type ExistMatcherOptions = zod.TypeOf<typeof ExistMatcherOptionsSchema>;
 
 export const ExistMatcherSchema = zod.object({
-  type: zod.enum(["exist", "string"]),
   options: ExistMatcherOptionsSchema,
 });
 
 export type ExistMatcherType = zod.TypeOf<typeof ExistMatcherSchema>;
 
 export const DEFAULT_EXIST_MATCHER: ExistMatcherType = {
-  type: "exist",
   options: { ignoreSingleNames: false, stripString: "[^a-zA-Z0-9'/\\,()[\\]{}-]" },
 };
 
@@ -55,13 +53,11 @@ export class ExistMatcher implements Matcher {
       for (const input of filteredInputs) {
         const cleanInput = stripStr(input, this.options.stripString);
         logger.silly(`(Exist matcher) Checking if "${cleanInput} matches "${cleanStr}"`);
-        let matchIndex = cleanInput === cleanStr ? 0 : -1;
+        const matchIndex = cleanInput === cleanStr ? 0 : -1;
         logger.silly(`(Exist matcher) Substring index: ${matchIndex}`);
         if (matchIndex !== -1) {
           logger.warn(
-            `(Exist matcher) matched str: ${str} for one of source inputs: ${formatMessage(
-              inputs
-            )}`
+            `(Exist matcher) matched str: ${str} for one of source inputs: ${formatMessage(inputs)}`
           );
           matches.push({
             source,
